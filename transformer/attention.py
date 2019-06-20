@@ -44,6 +44,7 @@ class Attention:
     return tf.nn.dropout(output, 1.0 - self.dropout)
 
   def _linear_projection(self, q, k, v):
+    """Linear mapping"""
     q = tf.layers.dense(q, self.linear_key_dim, use_bias=False)
     k = tf.layers.dense(k, self.linear_key_dim, use_bias=False)
     v = tf.layers.dense(v, self.linear_value_dim, use_bias=False)
@@ -68,10 +69,10 @@ class Attention:
     o2 = o1 / (key_dim_per_head ** 0.5)
 
     if self.masked:
-      diag_vals = tf.ones_like(o2[0, 0, :, :])  # (batch_size, num_heads, query_dim, key_dim)
-      tril = tf.linalg.LinearOperatorLowerTriangular(diag_vals).to_dense()  # (q_dim, k_dim)
+      diag_vals = tf.ones_like(o2[0, 0, :, :])  # (batch_size, num_heads, query_dim, key_dim) (1, 1, query_dim, key_dim)
+      tril = tf.linalg.LinearOperatorLowerTriangular(diag_vals).to_dense()  # (q_dim, k_dim) Lower triangle
       masks = tf.tile(tf.reshape(tril, [1, 1] + tril.get_shape().as_list()),
-                      [tf.shape(o2)[0], tf.shape(o2)[1], 1, 1])
+                      [tf.shape(o2)[0], tf.shape(o2)[1], 1, 1])  # remove the 1dim.
       paddings = tf.ones_like(masks) * -1e9
       o2 = tf.where(tf.equal(masks, 0), paddings, o2)
 
