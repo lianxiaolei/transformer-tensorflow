@@ -35,6 +35,7 @@ class Attention:
     self.dropout = dropout
 
   def multi_head(self, q, k, v):
+    """Multi head"""
     q, k, v = self._linear_projection(q, k, v)
     qs, ks, vs = self._split_heads(q, k, v)
     outputs = self._scaled_dot_product(qs, ks, vs)
@@ -51,6 +52,7 @@ class Attention:
     return q, k, v
 
   def _split_heads(self, q, k, v):
+    """Split heads"""
     def split_last_dimension_then_transpose(tensor, num_heads, dim):
       t_shape = tensor.get_shape().as_list()
       tensor = tf.reshape(tensor, [-1] + t_shape[1:-1] + [num_heads, dim // num_heads])
@@ -63,6 +65,7 @@ class Attention:
     return qs, ks, vs
 
   def _scaled_dot_product(self, qs, ks, vs):
+    """Scaled dot product"""
     key_dim_per_head = self.linear_key_dim // self.num_heads
 
     o1 = tf.matmul(qs, ks, transpose_b=True)
@@ -72,7 +75,7 @@ class Attention:
       diag_vals = tf.ones_like(o2[0, 0, :, :])  # (batch_size, num_heads, query_dim, key_dim) (1, 1, query_dim, key_dim)
       tril = tf.linalg.LinearOperatorLowerTriangular(diag_vals).to_dense()  # (q_dim, k_dim) Lower triangle
       masks = tf.tile(tf.reshape(tril, [1, 1] + tril.get_shape().as_list()),
-                      [tf.shape(o2)[0], tf.shape(o2)[1], 1, 1])  # remove the 1dim.
+                      [tf.shape(o2)[0], tf.shape(o2)[1], 1, 1])  # tile by given dim.
       paddings = tf.ones_like(masks) * -1e9
       o2 = tf.where(tf.equal(masks, 0), paddings, o2)
 
@@ -80,6 +83,7 @@ class Attention:
     return tf.matmul(o3, vs)
 
   def _concat_heads(self, outputs):
+    """Concat heads"""
     def transpose_then_concat_last_two_dimenstion(tensor):
       tensor = tf.transpose(tensor, [0, 2, 1, 3])  # [batch_size, max_seq_len, num_heads, dim]
       t_shape = tensor.get_shape().as_list()
